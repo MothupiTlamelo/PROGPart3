@@ -1,0 +1,29 @@
+﻿@model SystemClaim.Models.UploadDocument
+
+@{
+    ViewData["Title"] = "Document Details";
+}
+
+<h2>Document Details</h2>
+
+<div class="card p-3">
+    <dl class="row">
+        <dt class="col-sm-3">File Name</dt>
+        <dd class="col-sm-9">@Model.FileName</dd>
+
+        <dt class="col-sm-3">Uploaded</dt>
+        <dd class="col-sm-9">@Model.UploadDate</dd>
+
+        <dt class="col-sm-3">Claim ID</dt>
+        <dd class="col-sm-9">@Model.ClaimID</dd>
+
+        <dt class="col-sm-3">Download</dt>
+        <dd class="col-sm-9">
+            <a class="btn btn-success" href="@Model.FilePath" target="_blank">Download File</a>
+        </dd>
+    </dl>
+</div>
+
+<p>
+    <a class="btn btn-secondary" href="@Url.Action("List", new { claimId = Model.ClaimID })">Back to List</a>
+</p>

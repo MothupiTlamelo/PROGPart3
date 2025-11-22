@@ -1,0 +1,72 @@
+﻿@model Claims
+
+<h2>Create Work Claim</h2>
+
+<form asp-controller="Claims" asp-action="CreateClaim"
+      method="post" enctype="multipart/form-data">
+
+    <div class="mb-3">
+        <label>Name</label>
+        <input asp-for="Name" class="form-control" readonly />
+    </div>
+
+    <div class="mb-3">
+        <label>Surname</label>
+        <input asp-for="Surname" class="form-control" readonly />
+    </div>
+
+    <div class="mb-3">
+        <label>Department</label>
+        <input asp-for="Department" class="form-control" readonly />
+    </div>
+
+    <div class="mb-3">
+        <label>Rate Per Job</label>
+        <input asp-for="RatePerJob" id="ratePerJob" class="form-control" readonly />
+    </div>
+
+    <div class="mb-3">
+        <label>Number of Jobs</label>
+        <input asp-for="NumberOfJobs" id="numberOfJobs" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label>Total Amount</label>
+        <input asp-for="TotalAmount" id="totalAmountDisplay" class="form-control" readonly />
+        <input type="hidden" asp-for="TotalAmount" id="totalAmountHidden" />
+    </div>
+
+    <!-- 🔥 NEW: Upload supporting document -->
+    <div class="mb-3">
+        <label for="file">Supporting Document (PDF, Image, etc.)</label>
+        <input type="file" name="file" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit Claim</button>
+</form>
+
+
+<script>
+    const rateInput = document.getElementById("ratePerJob");
+    const jobsInput = document.getElementById("numberOfJobs");
+    const totalDisplay = document.getElementById("totalAmountDisplay");
+    const totalHidden = document.getElementById("totalAmountHidden");
+
+    function calculateTotal() {
+        const rate = parseFloat(rateInput.value);
+        const jobs = parseInt(jobsInput.value);
+
+        if (isNaN(rate) || isNaN(jobs)) {
+            totalDisplay.value = "";
+            totalHidden.value = "";
+            return;
+        }
+
+        const total = rate * jobs;
+        totalDisplay.value = total.toFixed(2);
+        totalHidden.value = total.toFixed(2);
+    }
+
+    jobsInput.addEventListener("input", calculateTotal);
+    rateInput.addEventListener("input", calculateTotal);
+</script>

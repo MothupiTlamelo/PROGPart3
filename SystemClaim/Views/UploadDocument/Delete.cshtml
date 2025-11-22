@@ -1,0 +1,27 @@
+﻿@model SystemClaim.Models.UploadDocument
+
+@{
+    ViewData["Title"] = "Delete Document";
+}
+
+<h2>Delete Document</h2>
+
+<div class="alert alert-danger">
+    <strong>Are you sure you want to delete this document?</strong>
+</div>
+
+<div class="card p-3">
+    <dl class="row">
+        <dt class="col-sm-3">File Name</dt>
+        <dd class="col-sm-9">@Model.FileName</dd>
+
+        <dt class="col-sm-3">Uploaded</dt>
+        <dd class="col-sm-9">@Model.UploadDate</dd>
+    </dl>
+</div>
+
+<form asp-action="Delete">
+    <input type="hidden" asp-for="DocumentID" />
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a class="btn btn-secondary" href="@Url.Action("List", new { claimId = Model.ClaimID })">Cancel</a>
+</form>

@@ -1,0 +1,165 @@
+﻿@model IEnumerable<SystemClaim.Models.Claims>
+
+@{
+    ViewData["Title"] = "PC Pending Claims";
+}
+
+<h2>PC Pending Claims</h2>
+
+<div class="mb-3">
+    <strong>Verification Guidelines:</strong>
+    <ul>
+        <li>Name, Surname, and Department must not be empty</li>
+        <li>Rate per Job & Number of Jobs must be greater than 0</li>
+        <li>Total Amount must equal Rate × Jobs</li>
+    </ul>
+    <button id="btnAutoVerify" class="btn btn-success">Auto Verify All</button>
+</div>
+
+<div id="alert-placeholder"></div>
+
+@if (!Model?.Any() ?? true)
+{
+    <div class="alert alert-info">No claims found with status "Submitted".</div>
+}
+else
+{
+    <table class="table table-striped table-bordered table-hover" id="claimsTable">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Surname</th>
+                <th>Department</th>
+                <th>Rate/Job</th>
+                <th>Jobs</th>
+                <th>Total</th>
+                <th>Created</th>
+                <th>Status</th>
+                <th style="min-width:200px">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in Model)
+            {
+                <tr data-claim-id="@c.Id" id="claim-row-@c.Id">
+                    <td>@c.Id</td>
+                    <td>@c.Name</td>
+                    <td>@c.Surname</td>
+                    <td>@c.Department</td>
+                    <td>@c.RatePerJob.ToString("F2")</td>
+                    <td>@c.NumberOfJobs</td>
+                    <td>@c.TotalAmount.ToString("F2")</td>
+                    <td>@c.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td class="claim-status">@c.Status</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-success btn-sm btn-verify" data-id="@c.Id">Verify</button>
+                            <button class="btn btn-danger btn-sm btn-reject" data-id="@c.Id">Reject</button>
+                        </div>
+                        <input type="text" class="form-control mt-1 reject-reason" placeholder="Reason" style="display:none;" />
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@section Scripts {
+    <script>
+        function showAlert(message, type = 'success') {
+            const placeholder = document.getElementById('alert-placeholder');
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = `<div class="alert alert-${type} alert-dismissible" role="alert">
+                <div>${message}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>`;
+            placeholder.append(wrapper);
+            setTimeout(() => { try { wrapper.remove() } catch(e){} }, 5000);
+        }
+
+        // AUTO VERIFY ALL
+        document.getElementById('btnAutoVerify').addEventListener('click', async () => {
+            if(!confirm('Auto verify all claims that meet guidelines?')) return;
+
+            try {
+                const resp = await fetch('@Url.Action("AutoVerify", "Verified")', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                });
+
+                if (!resp.ok) throw new Error('Request failed: ' + resp.status);
+
+                const result = await resp.json();
+
+                // Update rows that meet guidelines dynamically
+                document.querySelectorAll('#claimsTable tbody tr').forEach(row => {
+                    const statusCell = row.querySelector('.claim-status');
+                    const total = parseFloat(row.children[6].innerText);
+                    const rate = parseFloat(row.children[4].innerText);
+                    const jobs = parseInt(row.children[5].innerText);
+                    const name = row.children[1].innerText;
+                    const surname = row.children[2].innerText;
+                    const department = row.children[3].innerText;
+
+                    if (name && surname && department && rate > 0 && jobs > 0 && total === rate * jobs) {
+                        statusCell.innerText = 'Verified';
+                    }
+                });
+
+                showAlert(`${result.verifiedCount} claim(s) auto verified.`, 'success');
+
+            } catch(err) {
+                console.error(err);
+                showAlert('Auto verification failed', 'danger');
+            }
+        });
+
+        // MANUAL VERIFY
+        document.querySelectorAll('.btn-verify').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const id = this.dataset.id;
+                if (!confirm('Verify claim #' + id + '?')) return;
+                this.disabled = true;
+                try {
+                    const resp = await fetch(`@Url.Action("PcVerify", "Verified")?id=${id}`, { method: 'GET', credentials: 'same-origin' });
+                    if (!resp.ok) throw new Error('Request failed: ' + resp.status);
+                    document.getElementById('claim-row-' + id).querySelector('.claim-status').innerText = 'Verified';
+                    showAlert('Claim #' + id + ' verified.', 'success');
+                } catch(err) {
+                    console.error(err);
+                    showAlert('Failed to verify claim #' + id, 'danger');
+                    this.disabled = false;
+                }
+            });
+        });
+
+        // MANUAL REJECT
+        document.querySelectorAll('.btn-reject').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const row = this.closest('tr');
+                const reasonInput = row.querySelector('.reject-reason');
+                reasonInput.style.display = reasonInput.style.display === 'none' ? 'block' : 'none';
+                reasonInput.focus();
+                reasonInput.addEventListener('keypress', async (e) => {
+                    if (e.key !== 'Enter') return;
+                    const reason = reasonInput.value.trim();
+                    if (!reason) { alert('Enter a reason'); return; }
+                    this.disabled = true;
+                    try {
+                        const id = this.dataset.id;
+                        const resp = await fetch(`@Url.Action("PcReject", "Verified")?id=${id}&reason=${encodeURIComponent(reason)}`, { method: 'POST', credentials: 'same-origin' });
+                        if (!resp.ok) throw new Error('Request failed: ' + resp.status);
+                        row.querySelector('.claim-status').innerText = 'Rejected';
+                        showAlert('Claim #' + id + ' rejected.', 'warning');
+                        reasonInput.style.display = 'none';
+                    } catch(err) {
+                        console.error(err);
+                        showAlert('Failed to reject claim', 'danger');
+                        this.disabled = false;
+                    }
+                }, { once: true });
+            });
+        });
+    </script>
+}

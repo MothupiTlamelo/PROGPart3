@@ -1,0 +1,33 @@
+﻿@model IEnumerable<SystemClaim.Models.User>
+
+@{
+    ViewData["Title"] = "Employees";
+}
+
+<h2>Employees</h2>
+
+<a asp-action="CreateEmployee" class="btn btn-primary mb-3">Add New Employee</a>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Surname</th>
+            <th>Department</th>
+            <th>Default Rate (R)</th>
+            <th>Role</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var emp in Model)
+        {
+            <tr>
+                <td>@emp.Name</td>
+                <td>@emp.Surname</td>
+                <td>@emp.Department</td>
+                <td>@emp.DefaultRatePerJob.ToString("F2")</td>
+                <td>@emp.RoleName</td>
+            </tr>
+        }
+    </tbody>
+</table>

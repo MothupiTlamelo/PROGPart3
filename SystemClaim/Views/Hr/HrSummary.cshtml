@@ -1,0 +1,36 @@
+﻿@{
+    ViewData["Title"] = "HR Summary";
+}
+
+<h2>Claims Summary</h2>
+
+<table class="table">
+    <tr>
+        <th>Total number of claims</th>
+        <td>@ViewBag.TotalCount</td>
+    </tr>
+    <tr>
+        <th>Total amount of all claims (R)</th>
+        <td>@((decimal)ViewBag.TotalAmount).ToString("F2")</td>
+    </tr>
+    <tr>
+        <th>Submitted</th>
+        <td>@ViewBag.SubmittedCount</td>
+    </tr>
+    <tr>
+        <th>PM Rejected</th>
+        <td>@ViewBag.PmRejectedCount</td>
+    </tr>
+    <tr>
+        <th>CM Rejected</th>
+        <td>@ViewBag.CmRejectedCount</td>
+    </tr>
+    <tr>
+        <th>CM Approved (not yet paid)</th>
+        <td>@ViewBag.ApprovedCount</td>
+    </tr>
+    <tr>
+        <th>Paid</th>
+        <td>@ViewBag.PaidCount</td>
+    </tr>
+</table>
