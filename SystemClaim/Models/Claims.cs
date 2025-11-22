@@ -8,7 +8,7 @@ namespace SystemClaim.Models
         public int Id { get; set; }
 
         // The user who created the claim
-        public string? WorkerUserId { get; set; }
+        public string WorkerUserId { get; set; }
 
         // Basic claim details
         public string? Name { get; set; }

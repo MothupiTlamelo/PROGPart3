@@ -259,6 +259,7 @@ namespace SystemClaim.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("WorkerUserId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -331,6 +332,10 @@ namespace SystemClaim.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("password")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

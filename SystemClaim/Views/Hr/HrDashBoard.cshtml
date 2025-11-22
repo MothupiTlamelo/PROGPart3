@@ -17,6 +17,7 @@
             <th>Department</th>
             <th>Role</th>
             <th>Default Rate</th>
+            <th>Email</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -28,6 +29,8 @@
                 <td>@emp.Surname</td>
                 <td>@emp.Department</td>
                 <td>@emp.RoleName</td>
+                <td>@emp.Email</td>
+              
                 <td>@emp.DefaultRatePerJob.ToString("C")</td>
                 <td>
                     <a asp-action="Details" asp-route-id="@emp.Id" class="btn btn-info btn-sm">Details</a>

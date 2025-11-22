@@ -8,6 +8,7 @@ using SystemClaim.Models;
 
 namespace SystemClaim.Controllers
 {
+    [Authorize(Roles = "Lecturer")]
     public class ClaimsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -20,10 +21,13 @@ namespace SystemClaim.Controllers
         }
 
         // Show all claims for current user
+        [Authorize(Roles = "Lecturer")]
         public async Task<IActionResult> Claims()
         {
+            // Get the current user's ID
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+            // Fetch claims for this user
             var claims = await _context.Claims
                 .Where(c => c.WorkerUserId == userId)
                 .OrderByDescending(c => c.CreatedAt)
@@ -37,6 +41,7 @@ namespace SystemClaim.Controllers
         public async Task<IActionResult> CreateClaim()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             var profile = await _context.Userss.FirstOrDefaultAsync(p => p.UserId == userId);
 
             var model = new Claims();
@@ -53,53 +58,58 @@ namespace SystemClaim.Controllers
             return View(model);
         }
 
-        // POST: Create Claim + Upload File
+        // POST: Create Claim 
         [HttpPost]
-        [Authorize(Roles = "Lecturer")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateClaim(Claims model, IFormFile file)
+        public async Task<IActionResult> CreateClaim(Claims model)
         {
-            // Save the claim first
-            model.CreatedAt = DateTime.Now;
-            _context.Claims.Add(model);
-            await _context.SaveChangesAsync();
-
-            // The claim now exists & has a real ID:
-            int claimId = model.Id;
-
-            // If a file was uploaded, save it
-            if (file != null && file.Length > 0)
+            try
             {
-                var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-                var uniqueFile = $"{Guid.NewGuid()}_{file.FileName}";
-                var filePath = Path.Combine(uploadsFolder, uniqueFile);
-
-                using (var fs = new FileStream(filePath, FileMode.Create))
+                // Fetch profile to repopulate read-only fields
+                var profile = await _context.Userss.FirstOrDefaultAsync(p => p.UserId == userId);
+                if (profile != null)
                 {
-                    await file.CopyToAsync(fs);
+                    model.Name = profile.Name;
+                    model.Surname = profile.Surname;
+                    model.Department = profile.Department;
+                    model.RatePerJob = profile.DefaultRatePerJob;
+                    model.WorkerUserId = userId;
                 }
 
-                // Save document record
-                var doc = new UploadDocument
+                // Recalculate total
+                model.TotalAmount = model.RatePerJob * model.NumberOfJobs;
+
+                // Set initial status
+                if (string.IsNullOrEmpty(model.Status))
                 {
-                    ClaimID = claimId,               // FIXED: must be Id, not ClaimID
-                    FileName = file.FileName,
-                    FilePath = "/uploads/" + uniqueFile,
-                    UploadDate = DateTime.Now
-                };
+                    model.Status = "Pending";
+                }
 
-                _context.UploadDocuments.Add(doc);
+                if (!ModelState.IsValid)
+                {
+                    return View(model); // now the view has all the read-only fields populated
+                }
+
+                // Save
+                model.CreatedAt = DateTime.Now;
+                _context.Claims.Add(model);
                 await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Claim created successfully.";
+                return RedirectToAction("Claims");
             }
-
-            TempData["SuccessMessage"] = "Claim created successfully.";
-
-            // Redirect to list of docs for this claim
-            return RedirectToAction("List", "UploadDocument", new { claimId = claimId });
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                ModelState.AddModelError(string.Empty, $"An error occurred: {ex.Message}");
+                return View(model);
+            }
         }
+
+
+
 
         // View one claim
         public async Task<IActionResult> ViewClaims(int id)

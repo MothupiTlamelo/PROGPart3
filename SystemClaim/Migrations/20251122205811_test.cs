@@ -5,7 +5,7 @@
 namespace SystemClaim.Migrations
 {
     /// <inheritdoc />
-    public partial class int2 : Migration
+    public partial class test : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

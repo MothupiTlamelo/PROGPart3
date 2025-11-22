@@ -67,7 +67,8 @@ namespace SystemClaim.Controllers
                 Department = employee.Department,
                 DefaultRatePerJob = employee.DefaultRatePerJob,
                 RoleName = employee.RoleName,
-                Email = employee.Email   // <-- use actual Email, not UserId
+                Email = employee.Email,
+                Password = employee.password
             };
 
             return View(model);
@@ -90,6 +91,8 @@ namespace SystemClaim.Controllers
             employee.Department = model.Department;
             employee.DefaultRatePerJob = model.DefaultRatePerJob;
             employee.RoleName = model.RoleName;
+            employee.Email = model.Email;
+            employee.password = model.Password;
 
             _context.Userss.Update(employee);
             await _context.SaveChangesAsync();
@@ -163,7 +166,8 @@ namespace SystemClaim.Controllers
                         Department = model.Department,
                         DefaultRatePerJob = model.DefaultRatePerJob,
                         RoleName = model.RoleName,
-                        Email = model.Email     // <--- important!
+                        Email = model.Email,
+                        password = model.Password
                     };
 
                     _context.Userss.Add(profile);

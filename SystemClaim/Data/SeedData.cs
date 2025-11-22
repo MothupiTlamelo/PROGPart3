@@ -6,25 +6,22 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SystemClaim.Data;
 
-
 namespace SystemClaim
 {
-
     public static class SeedData
     {
         public static async Task InitializeAsync(IServiceProvider serviceProvider)
         {
-            // Get required services from the DI container.
+            // Get required services from DI container
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             var userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
             var context = serviceProvider.GetRequiredService<ApplicationDbContext>();
 
-            // 
+            // Apply migrations
             context.Database.Migrate();
 
-            // 
+            // Create roles
             string[] roles = { "HR", "Lecturer", "Coordinator", "Manager" };
-
             foreach (var roleName in roles)
             {
                 if (!await roleManager.RoleExistsAsync(roleName))
@@ -33,119 +30,47 @@ namespace SystemClaim
                 }
             }
 
-            // 
-            var hrEmail = "hr@site.com";
-            var hrUser = await userManager.FindByEmailAsync(hrEmail);
-            if (hrUser == null)
+            // Helper method to create Identity user + custom User
+            async Task CreateUser(string email, string password, string role, string name, string surname, string department, decimal ratePerJob)
             {
-                hrUser = new IdentityUser
+                var identityUser = await userManager.FindByEmailAsync(email);
+                if (identityUser == null)
                 {
-                    UserName = hrEmail,
-                    Email = hrEmail,
-                    EmailConfirmed = true
-                };
+                    identityUser = new IdentityUser
+                    {
+                        UserName = email,
+                        Email = email,
+                        EmailConfirmed = true
+                    };
 
-                // 
-                await userManager.CreateAsync(hrUser, "Hr@123!");
+                    var result = await userManager.CreateAsync(identityUser, password);
+                    if (!result.Succeeded)
+                        throw new Exception($"Failed to create Identity user {email}: {string.Join(", ", result.Errors)}");
 
-                await userManager.AddToRoleAsync(hrUser, "HR");
+                    await userManager.AddToRoleAsync(identityUser, role);
 
-                context.Userss.Add(new User
-                {
-                    UserId = hrUser.Id,
-                    Name = "HR",
-                    Surname = "Manager",
-                    Department = "Admin",
-                    DefaultRatePerJob = 0,
-                    RoleName = "HR"
-                });
+                    // Add to custom Userss table
+                    context.Userss.Add(new User
+                    {
+                        UserId = identityUser.Id,
+                        Name = name,
+                        Surname = surname,
+                        Department = department,
+                        DefaultRatePerJob = ratePerJob,
+                        RoleName = role,
+                        Email = email,       // IMPORTANT: NOT NULL column
+                        password = password  // Optional if your DB requires it; else remove
+                    });
 
-                await context.SaveChangesAsync();
+                    await context.SaveChangesAsync();
+                }
             }
 
-            // 
-            var pmEmail = "pm@site.com";
-            var pmUser = await userManager.FindByEmailAsync(pmEmail);
-            if (pmUser == null)
-            {
-                pmUser = new IdentityUser
-                {
-                    UserName = pmEmail,
-                    Email = pmEmail,
-                    EmailConfirmed = true
-                };
-
-                await userManager.CreateAsync(pmUser, "Pm@1234!");
-                await userManager.AddToRoleAsync(pmUser, "Coordinator");
-
-                context.Userss.Add(new User
-                {
-                    UserId = pmUser.Id,
-                    Name = "Project",
-                    Surname = "Manager",
-                    Department = "Projects",
-                    DefaultRatePerJob = 0,
-                    RoleName = "Coordinator"
-                });
-
-                await context.SaveChangesAsync();
-            }
-
-            // 
-            var cmEmail = "cm@site.com";
-            var cmUser = await userManager.FindByEmailAsync(cmEmail);
-            if (cmUser == null)
-            {
-                cmUser = new IdentityUser
-                {
-                    UserName = cmEmail,
-                    Email = cmEmail,
-                    EmailConfirmed = true
-                };
-
-                await userManager.CreateAsync(cmUser, "Cm@123!");
-                await userManager.AddToRoleAsync(cmUser, "Manager");
-
-                context.Userss.Add(new User
-                {
-                    UserId = cmUser.Id,
-                    Name = "Construction",
-                    Surname = "Manager",
-                    Department = "Construction",
-                    DefaultRatePerJob = 0,
-                    RoleName = "Manager"
-                });
-
-                await context.SaveChangesAsync();
-            }
-
-            // 
-            var workerEmail = "worker@site.com";
-            var workerUser = await userManager.FindByEmailAsync(workerEmail);
-            if (workerUser == null)
-            {
-                workerUser = new IdentityUser
-                {
-                    UserName = workerEmail,
-                    Email = workerEmail,
-                    EmailConfirmed = true
-                };
-
-                await userManager.CreateAsync(workerUser, "Worker@123!");
-                await userManager.AddToRoleAsync(workerUser, "Lecturer");
-
-                context.Userss.Add(new User
-                {
-                    UserId = workerUser.Id,
-                    Name = "John",
-                    Surname = "Builder",
-                    Department = "Masonry",
-                    DefaultRatePerJob = 200,
-                    RoleName = "Lecturer"
-                });
-
-                await context.SaveChangesAsync();
-            }
+            // Seed users
+            await CreateUser("hr@site.com", "Hr@123!", "HR", "HR", "Manager", "Admin", 0);
+            await CreateUser("pm@site.com", "Pm@1234!", "Coordinator", "Project", "Manager", "Projects", 0);
+            await CreateUser("cm@site.com", "Cm@123!", "Manager", "Construction", "Manager", "Construction", 0);
+            await CreateUser("worker@site.com", "Worker@123!", "Lecturer", "John", "Builder", "Masonry", 200);
         }
     }
 }

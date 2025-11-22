@@ -25,8 +25,11 @@ namespace SystemClaim.Models
         [StringLength(50)]
         public string Department { get; set; }
 
-
+        [Required]
         public string Email { get; set; }
+
+        [Required]
+        public string password { get; set; }
 
 
         [Required]
